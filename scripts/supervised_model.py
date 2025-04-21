@@ -7,16 +7,25 @@ from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 import joblib
 import os
+from sklearn.preprocessing import StandardScaler
 
 def load_data(filepath):
     """Simplified data loading with basic preprocessing"""
     df = pd.read_csv(filepath)
     
-    # Basic scaling
-    df['Amount'] = (df['Amount'] - df['Amount'].mean()) / df['Amount'].std()
-    df['Time'] = (df['Time'] - df['Time'].mean()) / df['Time'].std()
+    # Initialize scalers for Amount and Time
+    scaler_amount = StandardScaler()
+    scaler_time = StandardScaler()
     
-    return df
+    # Scale Amount and Time
+    df['Amount'] = scaler_amount.fit_transform(df['Amount'].values.reshape(-1, 1))
+    df['Time'] = scaler_time.fit_transform(df['Time'].values.reshape(-1, 1))
+    
+    # Save the scalers
+    joblib.dump(scaler_amount, 'scalers/scaler_amount.pkl')
+    joblib.dump(scaler_time, 'scalers/scaler_time.pkl')
+    
+    return df, scaler_amount, scaler_time
 
 def train_xgboost(X_train, y_train):
     """Simplified XGBoost training with fewer hyperparameters"""
@@ -65,11 +74,12 @@ if __name__ == "__main__":
     # Create directories if they don't exist
     os.makedirs('results', exist_ok=True)
     os.makedirs('models', exist_ok=True)
+    os.makedirs('scalers', exist_ok=True)
     
     try:
         # Load and prepare data
         print("Loading data...")
-        df = load_data('data/creditcard.csv')
+        df, scaler_amount, scaler_time = load_data('data/creditcard.csv')
         
         # Simple train-test split (no SMOTE to reduce computation)
         X = df.drop('Class', axis=1)

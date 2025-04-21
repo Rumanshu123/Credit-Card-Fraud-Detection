@@ -1,0 +1,1 @@
+"""Module for supervised_model functionality."""
